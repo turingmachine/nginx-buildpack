@@ -3,6 +3,8 @@ package supply
 import (
 	"fmt"
 	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/cloudfoundry/libbuildpack"
 )
@@ -41,10 +43,12 @@ func New(stager Stager, manifest Manifest, logger *libbuildpack.Logger) *Supplie
 
 func (s *Supplier) Run() error {
 	if err := s.Setup(); err != nil {
+		s.Log.Error("Could not setup: %s", err)
 		return err
 	}
 
 	if err := s.InstallNginx(); err != nil {
+		s.Log.Error("Could not install nginx: %s", err)
 		return err
 	}
 
@@ -72,8 +76,22 @@ func (s *Supplier) Setup() error {
 	return nil
 }
 
+func (s *Supplier) availableVersions() []string {
+	allVersions := s.Manifest.AllDependencyVersions("nginx")
+	allNames := []string{}
+	allSemver := []string{}
+	for k, v := range s.VersionLines {
+		if k != "" {
+			allNames = append(allNames, k)
+			allSemver = append(allSemver, v)
+		}
+	}
+	sort.Strings(allNames)
+	sort.Strings(allSemver)
+	return append(append(allNames, allSemver...), allVersions...)
+}
+
 func (s *Supplier) findMatchingVersion(depName string, version string) (libbuildpack.Dependency, error) {
-	dir := filepath.Join(s.Stager.DepDir(), depName)
 	if val, ok := s.VersionLines[version]; ok {
 		version = val
 	}
@@ -89,11 +107,20 @@ func (s *Supplier) findMatchingVersion(depName string, version string) (libbuild
 }
 
 func (s *Supplier) InstallNginx() error {
-	dep := s.findMatchingVersion("nginx", s.Config.Version)
-	s.Log.BeginStep("Requested nginx version: %s => %s", s.Config.Version, dep.Version)
+	dep, err := s.findMatchingVersion("nginx", s.Config.Version)
+	if err != nil {
+		s.Log.Info(`Available versions: ` + strings.Join(s.availableVersions(), ", "))
+		return fmt.Errorf("Could not determine version: %s", err)
+	}
+	if s.Config.Version == "" {
+		s.Log.BeginStep("No nginx version specified - using mainline => %s", dep.Version)
+	} else {
+		s.Log.BeginStep("Requested nginx version: %s => %s", s.Config.Version, dep.Version)
+	}
 
+	dir := filepath.Join(s.Stager.DepDir(), "nginx")
 	if err := s.Manifest.InstallDependency(dep, dir); err != nil {
-		return fmt.Errorf("Could not install nginx: %s", err)
+		return err
 	}
 
 	return s.Stager.AddBinDependencyLink(filepath.Join(dir, "nginx", "sbin", "nginx"), "nginx")
