@@ -104,6 +104,11 @@ DONE:
 	}
 }
 
+func (a *App) ConfirmBuildpack(version string) error {
+	// Not needed since always specified // TODO reconsider
+	return nil
+}
+
 func (a *App) Push() error {
 	if err := a.Stage(); err != nil {
 		return err
