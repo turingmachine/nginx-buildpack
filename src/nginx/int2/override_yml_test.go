@@ -36,7 +36,6 @@ func testObject5(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			buildpackName = "override_yml_" + cutlass.RandStringRunes(5)
-			cflocal.Zipit(filepath.Join(bpDir, "fixtures", "overrideyml_bp"), filepath.Join("/tmp", buildpackName+".zip"))
 			g.Expect(cluster.UploadBuildpack(buildpackName, "", filepath.Join("/tmp", buildpackName+".zip"))).To(Succeed())
 
 			app, err = cluster.NewApp(bpDir, "mainline")

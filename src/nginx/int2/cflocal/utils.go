@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func Zipit(source, target string) error {
+func zipit(source, target string) error {
 	zipfile, err := os.Create(target)
 	if err != nil {
 		return err
