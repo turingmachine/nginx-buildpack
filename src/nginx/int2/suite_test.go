@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"fmt"
+	"nginx/int2/cflocal"
 	"testing"
 
 	"github.com/cloudfoundry/libbuildpack/cutlass"
@@ -10,7 +11,7 @@ import (
 )
 
 var bpDir string
-var packagedBuildpack cutlass.VersionedBuildpackPackage
+var cluster *cflocal.Cluster
 
 func Test(t *testing.T) {
 	var err error
@@ -18,10 +19,14 @@ func Test(t *testing.T) {
 	if err != nil {
 		t.Error(fmt.Errorf("Could not find buildpack root dir: %s", err))
 	}
+	cluster = cflocal.NewCluster()
 
-	packagedBuildpack, err = cutlass.PackageUniquelyVersionedBuildpack()
+	buildpack, err := cutlass.PackageUniquelyVersionedBuildpack()
 	if err != nil {
 		t.Error(fmt.Errorf("Could not build buildpack: %s", err))
+	}
+	if err := cluster.UploadBuildpack("nginx_buildpack", buildpack.Version, buildpack.File); err != nil {
+		t.Error(fmt.Errorf("Could not upload default buildpack: %s", err))
 	}
 
 	spec.Run(t, "Buildpack", func(t *testing.T, when spec.G, it spec.S) {

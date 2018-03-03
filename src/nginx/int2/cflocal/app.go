@@ -9,46 +9,31 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"time"
 )
 
 type App struct {
-	defaultBuildpack string
-	Buildpacks       []string
-	fixture          string
-	name             string
-	tmpPath          string
-	cmd              *exec.Cmd
-	port             string
-	Stdout           bytes.Buffer
-	Stderr           bytes.Buffer
-}
-
-func NewApp(bpDir, fixtureName string) (*App, error) {
-	tmpPath, err := ioutil.TempDir("", "cflocal.app.")
-	if err != nil {
-		return nil, err
-	}
-	return &App{
-		defaultBuildpack: filepath.Join(bpDir, "nginx_buildpack-cached-v0.0.4.zip"),
-		Buildpacks:       []string{},
-		fixture:          filepath.Join(bpDir, "fixtures", fixtureName),
-		name:             fixtureName,
-		tmpPath:          tmpPath,
-	}, nil
+	cluster    *Cluster
+	Buildpacks []string
+	fixture    string
+	name       string
+	tmpPath    string
+	cmd        *exec.Cmd
+	port       string
+	Stdout     bytes.Buffer
+	Stderr     bytes.Buffer
 }
 
 func (a *App) Stage() error {
 	args := []string{"local", "stage", a.name, "-p", a.fixture}
 	if len(a.Buildpacks) > 0 {
 		for _, b := range a.Buildpacks {
-			args = append(args, "-b", b)
+			args = append(args, "-b", a.cluster.buildpack(b))
 		}
 	} else {
-		args = append(args, "-e", "-b", a.defaultBuildpack)
+		args = append(args, "-e", "-b", a.cluster.buildpack(a.cluster.defaultBuildpackName))
 	}
 	cmd := exec.Command("cf", args...)
 	cmd.Dir = a.tmpPath

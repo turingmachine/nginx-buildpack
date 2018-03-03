@@ -22,7 +22,7 @@ func testObject3(t *testing.T, when spec.G, it spec.S) {
 
 	when("with no specified version", func() {
 		it.Before(func() {
-			app, err = cflocal.NewApp(bpDir, "unspecified_version")
+			app, err = cluster.NewApp(bpDir, "unspecified_version")
 			g.Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -39,7 +39,7 @@ func testObject3(t *testing.T, when spec.G, it spec.S) {
 
 	when("with an nginx app specifying mainline", func() {
 		it.Before(func() {
-			app, err = cflocal.NewApp(bpDir, "mainline")
+			app, err = cluster.NewApp(bpDir, "mainline")
 			g.Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -55,7 +55,7 @@ func testObject3(t *testing.T, when spec.G, it spec.S) {
 
 	when("with an nginx app specifying stable", func() {
 		it.Before(func() {
-			app, err = cflocal.NewApp(bpDir, "stable")
+			app, err = cluster.NewApp(bpDir, "stable")
 			g.Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -72,7 +72,7 @@ func testObject3(t *testing.T, when spec.G, it spec.S) {
 
 	when("with an nginx app specifying 1.12.x", func() {
 		it.Before(func() {
-			app, err = cflocal.NewApp(bpDir, "1_12_x")
+			app, err = cluster.NewApp(bpDir, "1_12_x")
 			g.Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -89,7 +89,7 @@ func testObject3(t *testing.T, when spec.G, it spec.S) {
 
 	when("with an nginx app specifying an unknown version", func() {
 		it.Before(func() {
-			app, err = cflocal.NewApp(bpDir, "unavailable_version")
+			app, err = cluster.NewApp(bpDir, "unavailable_version")
 			g.Expect(err).ToNot(HaveOccurred())
 		})
 

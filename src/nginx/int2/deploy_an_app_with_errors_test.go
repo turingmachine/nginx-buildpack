@@ -22,14 +22,14 @@ func testObject4(t *testing.T, when spec.G, it spec.S) {
 
 	when("an app without nginx.conf", func() {
 		it.Before(func() {
-			app, err = cflocal.NewApp(bpDir, "empty")
+			app, err = cluster.NewApp(bpDir, "empty")
 			g.Expect(err).ToNot(HaveOccurred())
 			app.Buildpacks = []string{"nginx_buildpack"}
 		})
 
 		it("Logs nginx an error", func() {
 			g.Expect(app.Push()).ToNot(Succeed())
-			g.Expect(app.ConfirmBuildpack(packagedBuildpack.Version)).To(Succeed())
+			g.Expect(app.ConfirmBuildpack("nginx_buildpack")).To(Succeed())
 
 			g.Eventually(app.Stdout.String).Should(ContainSubstring("nginx.conf file must be present at the app root"))
 		})
@@ -37,13 +37,13 @@ func testObject4(t *testing.T, when spec.G, it spec.S) {
 
 	when("an app with nginx.conf without {{.Port}}", func() {
 		it.Before(func() {
-			app, err = cflocal.NewApp(bpDir, "missing_template_port")
+			app, err = cluster.NewApp(bpDir, "missing_template_port")
 			g.Expect(err).ToNot(HaveOccurred())
 		})
 
 		it("Logs nginx an error", func() {
 			g.Expect(app.Push()).ToNot(Succeed())
-			g.Expect(app.ConfirmBuildpack(packagedBuildpack.Version)).To(Succeed())
+			g.Expect(app.ConfirmBuildpack("nginx_buildpack")).To(Succeed())
 
 			g.Eventually(app.Stdout.String).Should(ContainSubstring("nginx.conf file must be configured to respect the value of `{{.Port}}`"))
 		})
