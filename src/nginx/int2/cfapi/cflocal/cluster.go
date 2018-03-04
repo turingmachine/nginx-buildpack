@@ -2,6 +2,7 @@ package cflocal
 
 import (
 	"io/ioutil"
+	"nginx/int2/cfapi/models"
 	"os"
 	"path/filepath"
 )
@@ -12,7 +13,7 @@ type Cluster struct {
 	defaultBuildpackVersion string
 }
 
-func NewCluster() *Cluster {
+func NewCluster() models.Cluster {
 	return &Cluster{
 		buildpacks: map[string]string{},
 	}
@@ -53,14 +54,14 @@ func (c *Cluster) DeleteBuildpack(name string) error {
 	return nil
 }
 
-func (c *Cluster) NewApp(bpDir, fixtureName string) (*App, error) {
+func (c *Cluster) NewApp(bpDir, fixtureName string) (models.App, error) {
 	tmpPath, err := ioutil.TempDir("", "cflocal.app.")
 	if err != nil {
 		return nil, err
 	}
 	return &App{
 		cluster:    c,
-		Buildpacks: []string{},
+		buildpacks: []string{},
 		fixture:    filepath.Join(bpDir, "fixtures", fixtureName),
 		name:       fixtureName,
 		tmpPath:    tmpPath,

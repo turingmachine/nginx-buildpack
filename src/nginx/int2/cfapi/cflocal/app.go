@@ -17,7 +17,7 @@ import (
 
 type App struct {
 	cluster    *Cluster
-	Buildpacks []string
+	buildpacks []string
 	fixture    string
 	name       string
 	tmpPath    string
@@ -27,10 +27,17 @@ type App struct {
 	Stderr     bytes.Buffer
 }
 
+func (a *App) Log() string {
+	return a.Stdout.String()
+}
+func (a *App) Buildpacks(buildpacks []string) {
+	a.buildpacks = buildpacks
+}
+
 func (a *App) Stage() error {
 	args := []string{"local", "stage", a.name, "-p", a.fixture}
-	if len(a.Buildpacks) > 0 {
-		for _, b := range a.Buildpacks {
+	if len(a.buildpacks) > 0 {
+		for _, b := range a.buildpacks {
 			args = append(args, "-b", a.cluster.buildpack(b))
 		}
 	} else {

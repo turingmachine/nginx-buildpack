@@ -2,7 +2,8 @@ package integration_test
 
 import (
 	"fmt"
-	"nginx/int2/cflocal"
+	"nginx/int2/cfapi"
+	"nginx/int2/cfapi/cflocal"
 	"testing"
 
 	"github.com/cloudfoundry/libbuildpack/cutlass"
@@ -11,7 +12,7 @@ import (
 )
 
 var bpDir string
-var cluster *cflocal.Cluster
+var cluster cfapi.Cluster
 
 func Test(t *testing.T) {
 	var err error
