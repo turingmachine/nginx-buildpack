@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
+	"syscall"
 	"time"
 )
 
@@ -114,7 +115,13 @@ func (a *App) Stop() error {
 	if a.cmd == nil {
 		return nil
 	}
-	if err := a.cmd.Process.Kill(); err != nil {
+	// if err := a.cmd.Process.Kill(); err != nil {
+	// 	return err
+	// }
+	// if err := a.cmd.Process.Signal(syscall.SIGINT); err != nil {
+	// 	return err
+	// }
+	if err := syscall.Kill(-a.cmd.Process.Pid, syscall.SIGINT); err != nil {
 		return err
 	}
 	a.cmd = nil
