@@ -3,6 +3,9 @@ package foundation
 import (
 	"bytes"
 	"nginx/int2/cfapi/utils"
+	"os"
+	"os/exec"
+	"path/filepath"
 )
 
 type App struct {
@@ -10,8 +13,10 @@ type App struct {
 	buildpacks []string
 	fixture    string
 	name       string
+	env        map[string]string
 	Stdout     bytes.Buffer
 	Stderr     bytes.Buffer
+	logCmd     *exec.Cmd
 }
 
 func (a *App) Buildpacks(buildpacks []string) {
@@ -23,8 +28,77 @@ func (a *App) ConfirmBuildpack(version string) error {
 	return nil
 }
 
-func (a *App) Push() error {
+func (a *App) PushNoStart() error {
+	args := []string{"push", a.name, "--no-start", "-p", a.fixture}
+	// if a.Stack != "" {
+	// 	args = append(args, "-s", a.Stack)
+	// }
+	if len(a.buildpacks) == 1 {
+		args = append(args, "-b", a.buildpacks[len(a.buildpacks)-1])
+	}
+	if _, err := os.Stat(filepath.Join(a.fixture, "manifest.yml")); err == nil {
+		args = append(args, "-f", filepath.Join(a.fixture, "manifest.yml"))
+	}
+	// if a.Memory != "" {
+	// 	args = append(args, "-m", a.Memory)
+	// }
+	// if a.Disk != "" {
+	// 	args = append(args, "-k", a.Disk)
+	// }
+	// if a.StartCommand != "" {
+	// 	args = append(args, "-c", a.StartCommand)
+	// }
+	// if a.StartCommand != "" {
+	// 	args = append(args, "-c", a.StartCommand)
+	// }
+	command := exec.Command("cf", args...)
+	command.Stdout = &a.Stdout
+	command.Stderr = &a.Stderr
+	if err := command.Run(); err != nil {
+		return err
+	}
+
+	for k, v := range a.env {
+		command := exec.Command("cf", "set-env", a.name, k, v)
+		command.Stdout = &a.Stdout
+		command.Stderr = &a.Stderr
+		if err := command.Run(); err != nil {
+			return err
+		}
+	}
+
+	if a.logCmd == nil {
+		a.logCmd = exec.Command("cf", "logs", a.name)
+		a.logCmd.Stderr = &a.Stderr
+		// TODO clear a.Stdout
+		// a.Stdout = bytes.NewBuffer(nil)
+		a.logCmd.Stdout = &a.Stdout
+		if err := a.logCmd.Start(); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func (a *App) Push() error {
+	if err := a.PushNoStart(); err != nil {
+		return err
+	}
+
+	var args []string
+	if len(a.buildpacks) > 1 {
+		args = []string{"v3-push", a.name, "-p", a.fixture}
+		for _, buildpack := range a.buildpacks {
+			args = append(args, "-b", buildpack)
+		}
+	} else {
+		args = []string{"start", a.name}
+	}
+	command := exec.Command("cf", args...)
+	command.Stdout = nil
+	command.Stderr = &a.Stderr
+	return command.Run()
 }
 
 func (a *App) PushAndConfirm() error {
@@ -37,11 +111,17 @@ func (a *App) PushAndConfirm() error {
 }
 
 func (a *App) Stop() error {
-	return nil
+	command := exec.Command("cf", "stop", a.name)
+	command.Stdout = nil
+	command.Stderr = &a.Stderr
+	return command.Run()
 }
 
 func (a *App) Destroy() error {
-	return nil
+	command := exec.Command("cf", "destroy", "-f", a.name)
+	command.Stdout = nil
+	command.Stderr = &a.Stderr
+	return command.Run()
 }
 
 func (a *App) GetUrl(path string) (string, error) {
