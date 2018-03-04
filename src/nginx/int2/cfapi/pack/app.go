@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -58,19 +59,26 @@ func (a *App) Stage() error {
 	}
 	io.Copy(&a.Stdout, out)
 
-	if err := os.RemoveAll(filepath.Join(a.tmpPath, "app")); err != nil {
-		return err
-	}
-	if err := os.MkdirAll(filepath.Join(a.tmpPath, "app"), 0755); err != nil {
-		return err
+	for _, name := range []string{"app", "out", "buildpacks"} {
+		if err := os.RemoveAll(filepath.Join(a.tmpPath, name)); err != nil {
+			return err
+		}
+		if err := os.MkdirAll(filepath.Join(a.tmpPath, name), 0755); err != nil {
+			return err
+		}
 	}
 	if err := libbuildpack.CopyDirectory(a.fixture, filepath.Join(a.tmpPath, "app")); err != nil {
 		return err
 	}
-	if err := os.RemoveAll(filepath.Join(a.tmpPath, "out")); err != nil {
+	// TODO Get correct dirname and handle set buildpacks
+	if err := os.MkdirAll(filepath.Join(a.tmpPath, "buildpacks", "acf92879c5d3998e550daedb7ab6b513"), 0755); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Join(a.tmpPath, "out"), 0755); err != nil {
+	if err := libbuildpack.ExtractZip(a.cluster.buildpack(a.cluster.defaultBuildpackName), filepath.Join(a.tmpPath, "buildpacks", "acf92879c5d3998e550daedb7ab6b513")); err != nil {
+		return err
+	}
+	configJson := `[{"name":"nginx-buildpack","uri":""}]`
+	if err := ioutil.WriteFile(filepath.Join(a.tmpPath, "buildpacks", "config.json"), []byte(configJson), 0644); err != nil {
 		return err
 	}
 
@@ -85,7 +93,7 @@ func (a *App) Stage() error {
 		Binds: []string{
 			filepath.Join(a.tmpPath, "app") + ":/workspace",
 			filepath.Join(a.tmpPath, "out") + ":/out",
-			// -v "$(pwd)/buildpacks:/var/lib/buildpacks"
+			filepath.Join(a.tmpPath, "buildpacks") + ":/var/lib/buildpacks",
 		},
 	}, nil, "")
 	if err != nil {

@@ -51,3 +51,10 @@ func (c *Cluster) NewApp(bpDir, fixtureName string) (models.App, error) {
 func (c *Cluster) HasMultiBuildpack() bool {
 	return true
 }
+
+func (c *Cluster) buildpack(buildpack string) string {
+	if c.buildpacks[buildpack] != "" {
+		return c.buildpacks[buildpack]
+	}
+	return buildpack
+}
