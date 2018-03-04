@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"nginx/int2/cfapi/utils"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -25,15 +24,15 @@ import (
 )
 
 type App struct {
-	cluster    *Cluster
-	buildpacks []string
-	fixture    string
-	name       string
-	tmpPath    string
-	cmd        *exec.Cmd
-	port       string
-	Stdout     bytes.Buffer
-	Stderr     bytes.Buffer
+	cluster     *Cluster
+	buildpacks  []string
+	fixture     string
+	name        string
+	tmpPath     string
+	port        string
+	containerID string
+	Stdout      bytes.Buffer
+	Stderr      bytes.Buffer
 }
 
 func (a *App) Buildpacks(buildpacks []string) {
@@ -41,6 +40,7 @@ func (a *App) Buildpacks(buildpacks []string) {
 }
 
 func (a *App) ConfirmBuildpack(version string) error {
+	// TODO
 	return nil
 }
 
@@ -71,14 +71,6 @@ func (a *App) setupBuildpackDir(buildpacks []string) error {
 }
 
 func (a *App) Stage() error {
-	// docker run --rm
-	// -v "$(pwd)/1_12_x:/workspace"
-	// -v "$(pwd)/out:/out"
-	// -v "$(pwd)/buildpacks:/var/lib/buildpacks"
-	// packs/cf:build
-
-	fmt.Println("**** Running pack.App.Stage: ", a.tmpPath)
-
 	ctx := context.Background()
 	cli, err := client.NewEnvClient()
 	if err != nil {
@@ -142,33 +134,6 @@ func (a *App) Stage() error {
 		return err
 	}
 
-	fmt.Println("**** ContainerID:", containerID)
-
-	// filter := filters.NewArgs()
-	// filter.Add("id", containerID)
-	// containers, err := cli.ContainerList(ctx, types.ContainerListOptions{Filters: filter})
-	// if err != nil {
-	// 	return err
-	// }
-	// if len(containers) < 1 {
-	// 	return fmt.Errorf("Could not find container with ID: %s", containerID)
-	// } else if len(containers) > 1 {
-	// 	return fmt.Errorf("Found %d containers with ID: %s", len(containers), containerID)
-	// }
-	// port := containers[0].Ports[0].PublicPort
-	// fmt.Println("**** Port:", port)
-	//
-	// c := make(chan os.Signal, 1)
-	// signal.Notify(c, os.Interrupt)
-	// go func() {
-	// 	for _ = range c {
-	// 		// sig is a ^C, handle it
-	// 		if err := cli.ContainerRemove(ctx, containerID, types.ContainerRemoveOptions{Force: true}); err != nil {
-	// 			fmt.Println("Failed to remove container")
-	// 		}
-	// 	}
-	// }()
-
 	out2, err := cli.ContainerLogs(ctx, containerID, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true, Follow: true})
 	if err != nil {
 		return err
@@ -179,9 +144,7 @@ func (a *App) Stage() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("**** StatusCode:", statusCode)
 
-	// TODO statusCode should be useful for return success below
 	if statusCode != 0 {
 		return fmt.Errorf("Docker run %s statusCode %v", imageName, statusCode)
 	}
@@ -189,9 +152,9 @@ func (a *App) Stage() error {
 }
 
 func (a *App) Run() error {
-	// docker run --rm -P -v "$(pwd)/out:/workspace" packs/cf:run
-	fmt.Println("**** Running pack.App.Run: ", a.tmpPath)
-
+	if a.containerID != "" {
+		return fmt.Errorf("Already running")
+	}
 	ctx := context.Background()
 	cli, err := client.NewEnvClient()
 	if err != nil {
@@ -221,29 +184,26 @@ func (a *App) Run() error {
 	if err != nil {
 		return err
 	}
-	containerID := resp.ID
+	a.containerID = resp.ID
 
-	if err := cli.ContainerStart(ctx, containerID, types.ContainerStartOptions{}); err != nil {
+	if err := cli.ContainerStart(ctx, a.containerID, types.ContainerStartOptions{}); err != nil {
 		return err
 	}
 
-	fmt.Println("**** ContainerID:", containerID)
-
 	filter := filters.NewArgs()
-	filter.Add("id", containerID)
+	filter.Add("id", a.containerID)
 	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{Filters: filter})
 	if err != nil {
 		return err
 	}
 	if len(containers) < 1 {
-		return fmt.Errorf("Could not find container with ID: %s", containerID)
+		return fmt.Errorf("Could not find container with ID: %s", a.containerID)
 	} else if len(containers) > 1 {
-		return fmt.Errorf("Found %d containers with ID: %s", len(containers), containerID)
+		return fmt.Errorf("Found %d containers with ID: %s", len(containers), a.containerID)
 	}
 	a.port = fmt.Sprintf("%d", containers[0].Ports[0].PublicPort)
-	fmt.Println("**** Port:", a.port)
 
-	out2, err := cli.ContainerLogs(ctx, containerID, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true, Follow: true})
+	out2, err := cli.ContainerLogs(ctx, a.containerID, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true, Follow: true})
 	if err != nil {
 		return err
 	}
@@ -286,10 +246,17 @@ func (a *App) PushAndConfirm() error {
 	return nil
 }
 func (a *App) Stop() error {
-	// TODO need to store containerID for RUN()
-	// if err := cli.ContainerRemove(ctx, containerID, types.ContainerRemoveOptions{Force: true}); err != nil {
-	// 	fmt.Println("Failed to remove container")
-	// }
+	if a.containerID != "" {
+		ctx := context.Background()
+		cli, err := client.NewEnvClient()
+		if err != nil {
+			return err
+		}
+		if err := cli.ContainerRemove(ctx, a.containerID, types.ContainerRemoveOptions{Force: true}); err != nil {
+			fmt.Println("Failed to remove container")
+		}
+		a.containerID = ""
+	}
 	return nil
 }
 func (a *App) Destroy() error {
