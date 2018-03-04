@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"nginx/int2/cfapi/utils"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -50,8 +51,18 @@ func (a *App) setupBuildpackDir(buildpacks []string) error {
 		if err := os.MkdirAll(buildpackDir, 0755); err != nil {
 			return err
 		}
-		if err := libbuildpack.ExtractZip(a.cluster.buildpack(buildpackName), buildpackDir); err != nil {
+		isDir, err := utils.IsDir(a.cluster.buildpack(buildpackName))
+		if err != nil {
 			return err
+		}
+		if isDir {
+			if err := libbuildpack.CopyDirectory(a.cluster.buildpack(buildpackName), buildpackDir); err != nil {
+				return err
+			}
+		} else {
+			if err := libbuildpack.ExtractZip(a.cluster.buildpack(buildpackName), buildpackDir); err != nil {
+				return err
+			}
 		}
 		configs = append(configs, fmt.Sprintf(`{"name":"%s","uri":""}`, buildpackName))
 	}
@@ -94,11 +105,14 @@ func (a *App) Stage() error {
 		return err
 	}
 	// TODO Get correct dirname and handle set buildpacks
+	var additionalFlags []string
 	if len(a.buildpacks) > 0 {
+		additionalFlags = []string{"-skipDetect=true", "-buildpackOrder=" + strings.Join(a.buildpacks, ",")}
 		if err := a.setupBuildpackDir(a.buildpacks); err != nil {
 			return err
 		}
 	} else {
+		additionalFlags = []string{}
 		if err := a.setupBuildpackDir([]string{a.cluster.defaultBuildpackName}); err != nil {
 			return err
 		}
@@ -109,6 +123,7 @@ func (a *App) Stage() error {
 		AttachStdout: true,
 		AttachStderr: true,
 		Tty:          true,
+		Cmd:          additionalFlags,
 	}, &container.HostConfig{
 		AutoRemove:      true,
 		PublishAllPorts: true,
@@ -202,7 +217,7 @@ func (a *App) Run() error {
 		Binds: []string{
 			filepath.Join(a.tmpPath, "out") + ":/workspace",
 		},
-	}, nil, "")
+	}, nil, a.name)
 	if err != nil {
 		return err
 	}

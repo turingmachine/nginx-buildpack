@@ -16,6 +16,8 @@ var bpDir string
 var cluster cfapi.Cluster
 
 func Test(t *testing.T) {
+	cutlass.SeedRandom()
+
 	var err error
 	bpDir, err = cutlass.FindRoot()
 	if err != nil {

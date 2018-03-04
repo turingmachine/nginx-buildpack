@@ -5,6 +5,8 @@ import (
 	"nginx/int2/cfapi/models"
 	"os"
 	"path/filepath"
+
+	"github.com/cloudfoundry/libbuildpack/cutlass"
 )
 
 type Cluster struct {
@@ -43,7 +45,7 @@ func (c *Cluster) NewApp(bpDir, fixtureName string) (models.App, error) {
 		cluster:    c,
 		buildpacks: []string{},
 		fixture:    filepath.Join(bpDir, "fixtures", fixtureName),
-		name:       fixtureName,
+		name:       fixtureName + "_" + cutlass.RandStringRunes(5),
 		tmpPath:    tmpPath,
 	}, nil
 }
