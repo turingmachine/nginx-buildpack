@@ -27,7 +27,7 @@ func isDir(name string) (bool, error) {
 }
 
 func (c *Cluster) UploadBuildpack(name, version, file string) error {
-	if b, err := isDir(name); err == nil && b {
+	if b, err := isDir(file); err == nil && b {
 		f, err := ioutil.TempFile("", name)
 		if err != nil {
 			return err
@@ -36,7 +36,7 @@ func (c *Cluster) UploadBuildpack(name, version, file string) error {
 		if err := zipit(file, f.Name()); err != nil {
 			return err
 		}
-		name = f.Name()
+		file = f.Name()
 	}
 
 	c.buildpacks[name] = file

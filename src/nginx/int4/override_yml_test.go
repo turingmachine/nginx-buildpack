@@ -17,7 +17,7 @@ func Test3(t *testing.T) {
 		}
 		SimpleTest(t, "Forces nginx from override buildpack", "mainline", func(t *testing.T, g *GomegaWithT, app *cflocal.App) {
 			buildpackName := "override_yml_" + cutlass.RandStringRunes(5)
-			g.Expect(cluster.UploadBuildpack(buildpackName, "", filepath.Join(bpDir, "fixtures", "override_yml"))).To(Succeed())
+			g.Expect(cluster.UploadBuildpack(buildpackName, "", filepath.Join(bpDir, "fixtures", "overrideyml_bp"))).To(Succeed())
 			defer cluster.DeleteBuildpack(buildpackName)
 			app.Buildpacks = []string{buildpackName, "nginx_buildpack"}
 
