@@ -2,10 +2,13 @@ package utils
 
 import (
 	"archive/zip"
+	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 func IsDir(name string) (bool, error) {
@@ -75,4 +78,23 @@ func Zipit(source, target string) error {
 	})
 
 	return err
+}
+
+func WaitForHttpPort(port string) error {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			client := http.Client{
+				Timeout: time.Duration(1 * time.Second),
+			}
+			if resp, err := client.Get(fmt.Sprintf("http://127.0.0.1:%s/healthcheck", port)); err == nil {
+				resp.Body.Close()
+				return nil
+			}
+		case <-time.After(3 * time.Second):
+			return fmt.Errorf("Timed out waiting to connect to port %s", port)
+		}
+	}
 }

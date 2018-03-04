@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
 	"net/http"
+	"nginx/int2/cfapi/utils"
 	"os"
 	"os/exec"
 	"regexp"
@@ -63,36 +63,30 @@ func (a *App) Run() error {
 		return err
 	}
 
+	var err error
+	a.port, err = findPort(stdout)
+	if err != nil {
+		return err
+	}
+	return utils.WaitForHttpPort(a.port)
+}
+
+func findPort(stdout bytes.Buffer) (string, error) {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
-DONE:
 	for {
 		select {
 		case <-ticker.C:
 			if line, err := stdout.ReadString('\n'); err == nil {
 				port := regexp.MustCompile(`Running .* on port (\d+)\.\.\.`).FindAllStringSubmatch(line, 1)
 				if len(port) == 1 {
-					a.port = port[0][1]
-					break DONE
+					return port[0][1], nil
 				} else {
-					return fmt.Errorf("Could not find port in: %s", line)
+					return "", fmt.Errorf("Could not find port in: %s", line)
 				}
 			}
 		case <-time.After(3 * time.Second):
-			return fmt.Errorf("Timed out trying to find port")
-		}
-	}
-
-	for {
-		select {
-		case <-ticker.C:
-			conn, err := net.Dial("tcp", fmt.Sprintf("127.0.0.1:%s", a.port))
-			if err == nil {
-				conn.Close()
-				return nil
-			}
-		case <-time.After(3 * time.Second):
-			return fmt.Errorf("Timed out waiting to connect to port %s", a.port)
+			return "", fmt.Errorf("Timed out trying to find port")
 		}
 	}
 }

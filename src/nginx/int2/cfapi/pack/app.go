@@ -7,14 +7,12 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"nginx/int2/cfapi/utils"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/cloudfoundry/libbuildpack"
 	"github.com/docker/docker/api/types"
@@ -206,23 +204,7 @@ func (a *App) Run() error {
 	}
 	go io.Copy(&a.Stdout, out2)
 
-	// TODO duplicate from cflocal
-	ticker := time.NewTicker(100 * time.Millisecond)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			conn, err := net.Dial("tcp", fmt.Sprintf("127.0.0.1:%s", a.port))
-			if err == nil {
-				conn.Close()
-				// TODO something better, maybe http connection instead of tcp????
-				time.Sleep(1000 * time.Millisecond)
-				return nil
-			}
-		case <-time.After(3 * time.Second):
-			return fmt.Errorf("Timed out waiting to connect to port %s", a.port)
-		}
-	}
+	return utils.WaitForHttpPort(a.port)
 }
 
 func (a *App) Push() error {
