@@ -94,7 +94,6 @@ func (a *App) Stage() error {
 	if err := libbuildpack.CopyDirectory(a.fixture, filepath.Join(a.tmpPath, "app")); err != nil {
 		return err
 	}
-	// TODO Get correct dirname and handle set buildpacks
 	var additionalFlags []string
 	if len(a.buildpacks) > 0 {
 		additionalFlags = []string{"-skipDetect=true", "-buildpackOrder=" + strings.Join(a.buildpacks, ",")}
@@ -228,9 +227,7 @@ func (a *App) Run() error {
 
 func (a *App) Push() error {
 	if err := a.Stage(); err != nil {
-		fmt.Println("***** Stage err:", err)
-		fmt.Println(a.Log())
-		return err
+		return fmt.Errorf("***** Stage err: %s\n%s", err, a.Log())
 	}
 	return a.Run()
 }
