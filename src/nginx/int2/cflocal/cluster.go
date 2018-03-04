@@ -48,6 +48,7 @@ func (c *Cluster) UploadBuildpack(name, version, file string) error {
 }
 
 func (c *Cluster) DeleteBuildpack(name string) error {
+	os.Remove(c.buildpacks[name])
 	delete(c.buildpacks, name)
 	return nil
 }

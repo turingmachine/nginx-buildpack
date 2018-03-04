@@ -36,7 +36,7 @@ func testObject5(t *testing.T, when spec.G, it spec.S) {
 			}
 
 			buildpackName = "override_yml_" + cutlass.RandStringRunes(5)
-			g.Expect(cluster.UploadBuildpack(buildpackName, "", filepath.Join("/tmp", buildpackName+".zip"))).To(Succeed())
+			g.Expect(cluster.UploadBuildpack(buildpackName, "", filepath.Join(bpDir, "fixtures", "overrideyml_bp"))).To(Succeed())
 
 			app, err = cluster.NewApp(bpDir, "mainline")
 			app.Buildpacks = []string{buildpackName, "nginx_buildpack"}

@@ -21,17 +21,17 @@ func init() {
 	}
 	cluster = cflocal.NewCluster()
 
-	// buildpack, err := cutlass.PackageUniquelyVersionedBuildpack()
-	// if err != nil {
-	// 	panic(fmt.Errorf("Could not build buildpack: %s", err))
-	// }
-	// if err := cluster.UploadBuildpack("nginx_buildpack", buildpack.Version, buildpack.File); err != nil {
-	// 	panic(fmt.Errorf("Could not upload default buildpack: %s", err))
-	// }
-
-	if err := cluster.UploadBuildpack("nginx_buildpack", "0.0.4", "/Users/dgodd/workspace/nginx-buildpack/nginx_buildpack-cached-v0.0.4.zip"); err != nil {
+	buildpack, err := cutlass.PackageUniquelyVersionedBuildpack()
+	if err != nil {
+		panic(fmt.Errorf("Could not build buildpack: %s", err))
+	}
+	if err := cluster.UploadBuildpack("nginx_buildpack", buildpack.Version, buildpack.File); err != nil {
 		panic(fmt.Errorf("Could not upload default buildpack: %s", err))
 	}
+
+	// if err := cluster.UploadBuildpack("nginx_buildpack", "0.0.4", "/Users/dgodd/workspace/nginx-buildpack/nginx_buildpack-cached-v0.0.4.zip"); err != nil {
+	// 	panic(fmt.Errorf("Could not upload default buildpack: %s", err))
+	// }
 
 	gomega.SetDefaultEventuallyTimeout(10 * time.Second)
 }
