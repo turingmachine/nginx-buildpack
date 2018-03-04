@@ -79,11 +79,9 @@ func (a *App) Stage() error {
 
 	imageName := "packs/cf:build"
 
-	out, err := cli.ImagePull(ctx, imageName, types.ImagePullOptions{})
-	if err != nil {
+	if _, err = cli.ImagePull(ctx, imageName, types.ImagePullOptions{}); err != nil {
 		return err
 	}
-	io.Copy(&a.Stdout, out)
 
 	for _, name := range []string{"app", "out", "buildpacks"} {
 		if err := os.RemoveAll(filepath.Join(a.tmpPath, name)); err != nil {
