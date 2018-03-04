@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"nginx/int2/cfapi"
 	"nginx/int2/cfapi/cflocal"
+	"nginx/int2/cfapi/foundation"
 	"nginx/int2/cfapi/pack"
 	"path/filepath"
 	"testing"
@@ -27,8 +28,10 @@ func Test(t *testing.T) {
 	// TODO allow choosing which cluster to use
 	if true {
 		cluster = pack.NewCluster()
-	} else {
+	} else if false {
 		cluster = cflocal.NewCluster()
+	} else {
+		cluster = foundation.NewCluster()
 	}
 
 	// buildpack, err := cutlass.PackageUniquelyVersionedBuildpack()
