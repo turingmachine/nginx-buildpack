@@ -1,4 +1,4 @@
-package cflocal
+package utils
 
 import (
 	"archive/zip"
@@ -8,7 +8,15 @@ import (
 	"strings"
 )
 
-func zipit(source, target string) error {
+func IsDir(name string) (bool, error) {
+	fi, err := os.Stat(name)
+	if err != nil {
+		return false, err
+	}
+	return fi.Mode().IsDir(), nil
+}
+
+func Zipit(source, target string) error {
 	zipfile, err := os.Create(target)
 	if err != nil {
 		return err

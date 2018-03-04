@@ -3,6 +3,7 @@ package cflocal
 import (
 	"io/ioutil"
 	"nginx/int2/cfapi/models"
+	"nginx/int2/cfapi/utils"
 	"os"
 	"path/filepath"
 )
@@ -19,22 +20,14 @@ func NewCluster() models.Cluster {
 	}
 }
 
-func isDir(name string) (bool, error) {
-	fi, err := os.Stat(name)
-	if err != nil {
-		return false, err
-	}
-	return fi.Mode().IsDir(), nil
-}
-
 func (c *Cluster) UploadBuildpack(name, version, file string) error {
-	if b, err := isDir(file); err == nil && b {
+	if b, err := utils.IsDir(file); err == nil && b {
 		f, err := ioutil.TempFile("", name)
 		if err != nil {
 			return err
 		}
 		f.Close()
-		if err := zipit(file, f.Name()); err != nil {
+		if err := utils.Zipit(file, f.Name()); err != nil {
 			return err
 		}
 		file = f.Name()
