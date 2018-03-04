@@ -160,21 +160,10 @@ func (a *App) Stage() error {
 	}
 	io.Copy(&a.Stdout, out2)
 
-	var statusCode int64
-	statusCh, errCh := cli.ContainerWait(ctx, containerID, container.WaitConditionNotRunning)
-	select {
-	case err := <-errCh:
-		if err != nil {
-			return err
-		}
-		panic("Received nil as error on errCh")
-	case resp := <-statusCh:
-		if resp.Error != nil {
-			return fmt.Errorf(resp.Error.Message)
-		}
-		statusCode = resp.StatusCode
+	statusCode, err := cli.ContainerWait(ctx, containerID)
+	if err != nil {
+		return err
 	}
-
 	fmt.Println("**** StatusCode:", statusCode)
 
 	// TODO statusCode should be useful for return success below
@@ -254,6 +243,8 @@ func (a *App) Run() error {
 			conn, err := net.Dial("tcp", fmt.Sprintf("127.0.0.1:%s", a.port))
 			if err == nil {
 				conn.Close()
+				// TODO something better, maybe http connection instead of tcp????
+				time.Sleep(1000 * time.Millisecond)
 				return nil
 			}
 		case <-time.After(3 * time.Second):

@@ -28,8 +28,8 @@ required = ["github.com/google/subcommands"]
   branch = "master"
 
 [[constraint]]
-  name = "github.com/docker/docker"
-  branch = "v17.03.2-ce"
+  name = "github.com/moby/moby"
+  branch = "master"
 
 [[override]]
   name = "github.com/elazarl/goproxy"
