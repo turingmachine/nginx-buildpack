@@ -3,6 +3,7 @@ package integration_test
 import (
 	"fmt"
 	"nginx/int2/cfapi"
+	"nginx/int2/cfapi/cflocal"
 	"nginx/int2/cfapi/pack"
 	"path/filepath"
 	"testing"
@@ -16,17 +17,19 @@ var bpDir string
 var cluster cfapi.Cluster
 
 func Test(t *testing.T) {
-	cutlass.SeedRandom()
-
 	var err error
+	cutlass.SeedRandom()
 	bpDir, err = cutlass.FindRoot()
 	if err != nil {
 		t.Error(fmt.Errorf("Could not find buildpack root dir: %s", err))
 	}
 
 	// TODO allow choosing which cluster to use
-	// cluster = cflocal.NewCluster()
-	cluster = pack.NewCluster()
+	if true {
+		cluster = pack.NewCluster()
+	} else {
+		cluster = cflocal.NewCluster()
+	}
 
 	// buildpack, err := cutlass.PackageUniquelyVersionedBuildpack()
 	// if err != nil {
