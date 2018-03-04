@@ -7,11 +7,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/http"
 	"nginx/int2/cfapi/utils"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/cloudfoundry/libbuildpack"
@@ -222,6 +220,7 @@ func (a *App) PushAndConfirm() error {
 	// Expect(app.ConfirmBuildpack(buildpackVersion)).To(Succeed())
 	return nil
 }
+
 func (a *App) Stop() error {
 	if a.containerID != "" {
 		ctx := context.Background()
@@ -236,6 +235,7 @@ func (a *App) Stop() error {
 	}
 	return nil
 }
+
 func (a *App) Destroy() error {
 	a.Stop()
 	return os.RemoveAll(a.tmpPath)
@@ -247,47 +247,21 @@ func (a *App) GetUrl(path string) (string, error) {
 	}
 	return fmt.Sprintf("http://localhost:%s%s", a.port, path), nil
 }
+
 func (a *App) Get(path string, headers map[string]string) (string, map[string][]string, error) {
 	url, err := a.GetUrl(path)
 	if err != nil {
 		return "", map[string][]string{}, err
 	}
-	client := &http.Client{}
-	if headers["NoFollow"] == "true" {
-		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		}
-		delete(headers, "NoFollow")
-	}
-	req, _ := http.NewRequest("GET", url, nil)
-	for k, v := range headers {
-		req.Header.Add(k, v)
-	}
-	if headers["user"] != "" && headers["password"] != "" {
-		req.SetBasicAuth(headers["user"], headers["password"])
-		delete(headers, "user")
-		delete(headers, "password")
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", map[string][]string{}, err
-	}
-	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", map[string][]string{}, err
-	}
-	resp.Header["StatusCode"] = []string{strconv.Itoa(resp.StatusCode)}
-	return string(data), resp.Header, err
+	return utils.HttpGet(url, headers)
 }
 
 func (a *App) GetBody(path string) (string, error) {
-	body, _, err := a.Get(path, map[string]string{})
-	// TODO: Non 200 ??
-	// if !(len(headers["StatusCode"]) == 1 && headers["StatusCode"][0] == "200") {
-	// 	return "", fmt.Errorf("non 200 status: %v", headers)
-	// }
-	return body, err
+	url, err := a.GetUrl(path)
+	if err != nil {
+		return "", err
+	}
+	return utils.HttpGetBody(url)
 }
 
 func (a *App) Log() string {

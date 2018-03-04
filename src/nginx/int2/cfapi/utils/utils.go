@@ -4,9 +4,11 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -97,4 +99,43 @@ func WaitForHttpPort(port string) error {
 			return fmt.Errorf("Timed out waiting to connect to port %s", port)
 		}
 	}
+}
+
+func HttpGet(url string, headers map[string]string) (string, map[string][]string, error) {
+	client := &http.Client{}
+	if headers["NoFollow"] == "true" {
+		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
+		delete(headers, "NoFollow")
+	}
+	req, _ := http.NewRequest("GET", url, nil)
+	for k, v := range headers {
+		req.Header.Add(k, v)
+	}
+	if headers["user"] != "" && headers["password"] != "" {
+		req.SetBasicAuth(headers["user"], headers["password"])
+		delete(headers, "user")
+		delete(headers, "password")
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", map[string][]string{}, err
+	}
+	defer resp.Body.Close()
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", map[string][]string{}, err
+	}
+	resp.Header["StatusCode"] = []string{strconv.Itoa(resp.StatusCode)}
+	return string(data), resp.Header, err
+}
+
+func HttpGetBody(url string) (string, error) {
+	body, _, err := HttpGet(url, map[string]string{})
+	// TODO: Non 200 ??
+	// if !(len(headers["StatusCode"]) == 1 && headers["StatusCode"][0] == "200") {
+	// 	return "", fmt.Errorf("non 200 status: %v", headers)
+	// }
+	return body, err
 }
