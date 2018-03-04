@@ -12,8 +12,13 @@ func testObject3(t *testing.T, when spec.G, it spec.S) {
 	var app cfapi.App
 	var err error
 	var g *GomegaWithT
-	it.Before(func() { g = NewGomegaWithT(t) })
-
+	var Expect func(actual interface{}, extra ...interface{}) GomegaAssertion
+	var Eventually func(actual interface{}, intervals ...interface{}) GomegaAsyncAssertion
+	it.Before(func() {
+		g = NewGomegaWithT(t)
+		Expect = g.Expect
+		Eventually = g.Eventually
+	})
 	it.After(func() {
 		if app != nil {
 			app.Destroy()
@@ -23,80 +28,80 @@ func testObject3(t *testing.T, when spec.G, it spec.S) {
 	when("with no specified version", func() {
 		it.Before(func() {
 			app, err = cluster.NewApp(bpDir, "unspecified_version")
-			g.Expect(err).ToNot(HaveOccurred())
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		it("Uses latest mainline nginx", func() {
-			g.Expect(app.PushAndConfirm()).To(Succeed())
+			Expect(app.PushAndConfirm()).To(Succeed())
 
-			g.Eventually(app.Log).Should(ContainSubstring(`No nginx version specified - using mainline => 1.13.`))
-			g.Eventually(app.Log).ShouldNot(ContainSubstring(`Requested nginx version:`))
+			Eventually(app.Log).Should(ContainSubstring(`No nginx version specified - using mainline => 1.13.`))
+			Eventually(app.Log).ShouldNot(ContainSubstring(`Requested nginx version:`))
 
-			g.Expect(app.GetBody("/")).To(ContainSubstring("Exciting Content"))
-			g.Eventually(app.Log).Should(ContainSubstring(`NginxLog "GET / HTTP/1.1" 200`))
+			Expect(app.GetBody("/")).To(ContainSubstring("Exciting Content"))
+			Eventually(app.Log).Should(ContainSubstring(`NginxLog "GET / HTTP/1.1" 200`))
 		})
 	})
 
 	when("with an nginx app specifying mainline", func() {
 		it.Before(func() {
 			app, err = cluster.NewApp(bpDir, "mainline")
-			g.Expect(err).ToNot(HaveOccurred())
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		it("Logs nginx buildpack version", func() {
-			g.Expect(app.PushAndConfirm()).To(Succeed())
+			Expect(app.PushAndConfirm()).To(Succeed())
 
-			g.Eventually(app.Log).Should(ContainSubstring(`Requested nginx version: mainline => 1.13.`))
+			Eventually(app.Log).Should(ContainSubstring(`Requested nginx version: mainline => 1.13.`))
 
-			g.Expect(app.GetBody("/")).To(ContainSubstring("Exciting Content"))
-			g.Eventually(app.Log).Should(ContainSubstring(`NginxLog "GET / HTTP/1.1" 200`))
+			Expect(app.GetBody("/")).To(ContainSubstring("Exciting Content"))
+			Eventually(app.Log).Should(ContainSubstring(`NginxLog "GET / HTTP/1.1" 200`))
 		})
 	})
 
 	when("with an nginx app specifying stable", func() {
 		it.Before(func() {
 			app, err = cluster.NewApp(bpDir, "stable")
-			g.Expect(err).ToNot(HaveOccurred())
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		it("Logs nginx buildpack version", func() {
-			g.Expect(app.PushAndConfirm()).To(Succeed())
+			Expect(app.PushAndConfirm()).To(Succeed())
 
-			g.Eventually(app.Log).Should(ContainSubstring(`Requested nginx version: stable => 1.12.`))
-			g.Eventually(app.Log).Should(ContainSubstring(`Warning: usage of "stable" versions of NGINX is discouraged in most cases by the NGINX team.`))
+			Eventually(app.Log).Should(ContainSubstring(`Requested nginx version: stable => 1.12.`))
+			Eventually(app.Log).Should(ContainSubstring(`Warning: usage of "stable" versions of NGINX is discouraged in most cases by the NGINX team.`))
 
-			g.Expect(app.GetBody("/")).To(ContainSubstring("Exciting Content"))
-			g.Eventually(app.Log).Should(ContainSubstring(`NginxLog "GET / HTTP/1.1" 200`))
+			Expect(app.GetBody("/")).To(ContainSubstring("Exciting Content"))
+			Eventually(app.Log).Should(ContainSubstring(`NginxLog "GET / HTTP/1.1" 200`))
 		})
 	})
 
 	when("with an nginx app specifying 1.12.x", func() {
 		it.Before(func() {
 			app, err = cluster.NewApp(bpDir, "1_12_x")
-			g.Expect(err).ToNot(HaveOccurred())
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		it("Logs nginx buildpack version", func() {
-			g.Expect(app.PushAndConfirm()).To(Succeed())
+			Expect(app.PushAndConfirm()).To(Succeed())
 
-			g.Eventually(app.Log).Should(ContainSubstring(`Requested nginx version: 1.12.x => 1.12.`))
-			g.Eventually(app.Log).Should(ContainSubstring(`Warning: usage of "stable" versions of NGINX is discouraged in most cases by the NGINX team.`))
+			Eventually(app.Log).Should(ContainSubstring(`Requested nginx version: 1.12.x => 1.12.`))
+			Eventually(app.Log).Should(ContainSubstring(`Warning: usage of "stable" versions of NGINX is discouraged in most cases by the NGINX team.`))
 
-			g.Expect(app.GetBody("/")).To(ContainSubstring("Exciting Content"))
-			g.Eventually(app.Log).Should(ContainSubstring(`NginxLog "GET / HTTP/1.1" 200`))
+			Expect(app.GetBody("/")).To(ContainSubstring("Exciting Content"))
+			Eventually(app.Log).Should(ContainSubstring(`NginxLog "GET / HTTP/1.1" 200`))
 		})
 	})
 
 	when("with an nginx app specifying an unknown version", func() {
 		it.Before(func() {
 			app, err = cluster.NewApp(bpDir, "unavailable_version")
-			g.Expect(err).ToNot(HaveOccurred())
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		it("Logs nginx buildpack version", func() {
-			g.Expect(app.Push()).ToNot(Succeed())
+			Expect(app.Push()).ToNot(Succeed())
 
-			g.Eventually(app.Log).Should(ContainSubstring(`Available versions: mainline, stable, 1.12.x, 1.13.x`))
+			Eventually(app.Log).Should(ContainSubstring(`Available versions: mainline, stable, 1.12.x, 1.13.x`))
 		})
 	})
 }
