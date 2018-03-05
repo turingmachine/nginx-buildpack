@@ -6,7 +6,6 @@ import (
 	"nginx/int2/cfapi/cflocal"
 	"nginx/int2/cfapi/foundation"
 	"nginx/int2/cfapi/pack"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -34,29 +33,32 @@ func Test(t *testing.T) {
 
 	// TODO allow choosing which cluster to use
 	if true {
+		// 18s & 16s
 		cluster = pack.NewCluster()
 	} else if false {
+		// ??s & ??s
 		cluster = cflocal.NewCluster()
 	} else {
+		// 83s (1m23s) & 81s
 		cluster = foundation.NewCluster()
 	}
 
-	// cutlass.Cached = true
-	// fmt.Println("Building Buildpack")
-	// buildpack, err := cutlass.PackageUniquelyVersionedBuildpack()
-	// if err != nil {
-	// 	t.Error(fmt.Errorf("Could not build buildpack: %s", err))
-	// }
-	// fmt.Println("Uploading Buildpack:", buildpack.File)
-	// if err := cluster.UploadBuildpack("nginx_buildpack", buildpack.Version, buildpack.File); err != nil {
-	// 	t.Error(fmt.Errorf("Could not upload default buildpack: %s", err))
-	// }
+	cutlass.Cached = true
+	fmt.Println("Building Buildpack")
+	buildpack, err := cutlass.PackageUniquelyVersionedBuildpack()
+	if err != nil {
+		t.Error(fmt.Errorf("Could not build buildpack: %s", err))
+	}
+	fmt.Println("Uploading Buildpack:", buildpack.File)
+	if err := cluster.UploadBuildpack("nginx_buildpack", buildpack.Version, buildpack.File); err != nil {
+		t.Error(fmt.Errorf("Could not upload default buildpack: %s", err))
+	}
 
 	// TODO use the above instead
-	fmt.Println("Uploading Buildpack")
-	if err := cluster.UploadBuildpack("nginx_buildpack", "0.0.4.20180305091047", filepath.Join(bpDir, "nginx_buildpack-cached-v0.0.4.20180305091047.zip")); err != nil {
-		panic(fmt.Errorf("Could not upload default buildpack: %s", err))
-	}
+	// fmt.Println("Uploading Buildpack")
+	// if err := cluster.UploadBuildpack("nginx_buildpack", "0.0.4.20180305091047", filepath.Join(bpDir, "nginx_buildpack-cached-v0.0.4.20180305091047.zip")); err != nil {
+	// 	panic(fmt.Errorf("Could not upload default buildpack: %s", err))
+	// }
 
 	spec.Run(t, "Buildpack", func(t *testing.T, when spec.G, it spec.S) {
 		testObject3(t, when, it)
