@@ -2,10 +2,15 @@ package foundation
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"nginx/int2/cfapi/utils"
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/tidwall/gjson"
 )
 
 type App struct {
@@ -118,15 +123,30 @@ func (a *App) Stop() error {
 }
 
 func (a *App) Destroy() error {
-	command := exec.Command("cf", "destroy", "-f", a.name)
+	command := exec.Command("cf", "delete", "-f", a.name)
 	command.Stdout = nil
 	command.Stderr = &a.Stderr
 	return command.Run()
 }
 
 func (a *App) GetUrl(path string) (string, error) {
-	// TODO
-	return "", nil
+	guid, err := a.AppGUID()
+	if err != nil {
+		return "", err
+	}
+	cmd := exec.Command("cf", "curl", "/v2/apps/"+guid+"/summary")
+	cmd.Stderr = &a.Stderr
+	data, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	schema, found := os.LookupEnv("CUTLASS_SCHEMA")
+	if !found {
+		schema = "http"
+	}
+	host := gjson.Get(string(data), "routes.0.host").String()
+	domain := gjson.Get(string(data), "routes.0.domain.name").String()
+	return fmt.Sprintf("%s://%s.%s%s", schema, host, domain, path), nil
 }
 
 func (a *App) Get(path string, headers map[string]string) (string, map[string][]string, error) {
@@ -147,4 +167,71 @@ func (a *App) GetBody(path string) (string, error) {
 
 func (a *App) Log() string {
 	return a.Stdout.String()
+}
+
+func (a *App) SetEnv(key, value string) {
+	a.env[key] = value
+}
+
+func (a *App) SpaceGUID() (string, error) {
+	cfHome := os.Getenv("CF_HOME")
+	if cfHome == "" {
+		cfHome = os.Getenv("HOME")
+	}
+	bytes, err := ioutil.ReadFile(filepath.Join(cfHome, ".cf", "config.json"))
+	if err != nil {
+		return "", err
+	}
+	var config cfConfig
+	if err := json.Unmarshal(bytes, &config); err != nil {
+		return "", err
+	}
+	return config.SpaceFields.GUID, nil
+}
+
+func (a *App) AppGUID() (string, error) {
+	if a.appGUID != "" {
+		return a.appGUID, nil
+	}
+	guid, err := a.SpaceGUID()
+	if err != nil {
+		return "", err
+	}
+	cmd := exec.Command("cf", "curl", "/v2/apps?q=space_guid:"+guid+"&q=name:"+a.Name)
+	cmd.Stderr = DefaultStdoutStderr
+	bytes, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	var apps cfApps
+	if err := json.Unmarshal(bytes, &apps); err != nil {
+		return "", err
+	}
+	if len(apps.Resources) != 1 {
+		return "", fmt.Errorf("Expected one app, found %d", len(apps.Resources))
+	}
+	a.appGUID = apps.Resources[0].Metadata.GUID
+	return a.appGUID, nil
+}
+
+func (a *App) InstanceStates() ([]string, error) {
+	guid, err := a.AppGUID()
+	if err != nil {
+		return []string{}, err
+	}
+	cmd := exec.Command("cf", "curl", "/v2/apps/"+guid+"/instances")
+	cmd.Stderr = DefaultStdoutStderr
+	bytes, err := cmd.Output()
+	if err != nil {
+		return []string{}, err
+	}
+	var data map[string]cfInstance
+	if err := json.Unmarshal(bytes, &data); err != nil {
+		return []string{}, err
+	}
+	var states []string
+	for _, value := range data {
+		states = append(states, value.State)
+	}
+	return states, nil
 }

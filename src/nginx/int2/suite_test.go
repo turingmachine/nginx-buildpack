@@ -26,7 +26,7 @@ func Test(t *testing.T) {
 	}
 
 	// TODO allow choosing which cluster to use
-	if true {
+	if false {
 		cluster = pack.NewCluster()
 	} else if false {
 		cluster = cflocal.NewCluster()
