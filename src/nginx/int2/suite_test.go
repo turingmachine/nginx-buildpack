@@ -26,7 +26,7 @@ func Test(t *testing.T) {
 	}
 
 	// TODO allow choosing which cluster to use
-	if false {
+	if true {
 		cluster = pack.NewCluster()
 	} else if false {
 		cluster = cflocal.NewCluster()
@@ -34,16 +34,20 @@ func Test(t *testing.T) {
 		cluster = foundation.NewCluster()
 	}
 
+	// cutlass.Cached = true
+	// fmt.Println("Building Buildpack")
 	// buildpack, err := cutlass.PackageUniquelyVersionedBuildpack()
 	// if err != nil {
 	// 	t.Error(fmt.Errorf("Could not build buildpack: %s", err))
 	// }
+	// fmt.Println("Uploading Buildpack:", buildpack.File)
 	// if err := cluster.UploadBuildpack("nginx_buildpack", buildpack.Version, buildpack.File); err != nil {
 	// 	t.Error(fmt.Errorf("Could not upload default buildpack: %s", err))
 	// }
 
 	// TODO use the above instead
-	if err := cluster.UploadBuildpack("nginx_buildpack", "0.0.4", filepath.Join(bpDir, "nginx_buildpack-cached-v0.0.4.zip")); err != nil {
+	fmt.Println("Uploading Buildpack")
+	if err := cluster.UploadBuildpack("nginx_buildpack", "0.0.4.20180305091047", filepath.Join(bpDir, "/home/dgodd/workspace/nginx-buildpack/nginx_buildpack-cached-v0.0.4.20180305091047.zip")); err != nil {
 		panic(fmt.Errorf("Could not upload default buildpack: %s", err))
 	}
 

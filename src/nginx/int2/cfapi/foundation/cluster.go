@@ -1,6 +1,7 @@
 package foundation
 
 import (
+	"fmt"
 	"nginx/int2/cfapi/models"
 	"os/exec"
 	"path/filepath"
@@ -18,11 +19,15 @@ func NewCluster() models.Cluster {
 
 func (c *Cluster) UploadBuildpack(name, version, file string) error {
 	command := exec.Command("cf", "update-buildpack", name, "-p", file)
-	if _, err := command.CombinedOutput(); err == nil {
+	out1, err := command.CombinedOutput()
+	if err == nil {
 		return nil
 	}
 	command = exec.Command("cf", "create-buildpack", name, file, "100", "--enable")
-	_, err := command.CombinedOutput()
+	out2, err := command.CombinedOutput()
+	if err != nil {
+		fmt.Println(string(out1), "\n", string(out2))
+	}
 	return err
 }
 

@@ -22,6 +22,8 @@ type App struct {
 	Stdout     bytes.Buffer
 	Stderr     bytes.Buffer
 	logCmd     *exec.Cmd
+	spaceGUID  string
+	appGUID    string
 }
 
 func (a *App) Buildpacks(buildpacks []string) {
@@ -174,6 +176,9 @@ func (a *App) SetEnv(key, value string) {
 }
 
 func (a *App) SpaceGUID() (string, error) {
+	if a.spaceGUID != "" {
+		return a.spaceGUID, nil
+	}
 	cfHome := os.Getenv("CF_HOME")
 	if cfHome == "" {
 		cfHome = os.Getenv("HOME")
@@ -182,11 +187,16 @@ func (a *App) SpaceGUID() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	var config cfConfig
+	var config struct {
+		SpaceFields struct {
+			GUID string
+		}
+	}
 	if err := json.Unmarshal(bytes, &config); err != nil {
 		return "", err
 	}
-	return config.SpaceFields.GUID, nil
+	a.spaceGUID = config.SpaceFields.GUID
+	return a.spaceGUID, nil
 }
 
 func (a *App) AppGUID() (string, error) {
@@ -197,13 +207,19 @@ func (a *App) AppGUID() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	cmd := exec.Command("cf", "curl", "/v2/apps?q=space_guid:"+guid+"&q=name:"+a.Name)
-	cmd.Stderr = DefaultStdoutStderr
+	cmd := exec.Command("cf", "curl", "/v2/apps?q=space_guid:"+guid+"&q=name:"+a.name)
+	cmd.Stderr = &a.Stderr
 	bytes, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
-	var apps cfApps
+	var apps struct {
+		Resources []struct {
+			Metadata struct {
+				GUID string `json:"guid"`
+			} `json:"metadata"`
+		} `json:"resources"`
+	}
 	if err := json.Unmarshal(bytes, &apps); err != nil {
 		return "", err
 	}
@@ -220,12 +236,14 @@ func (a *App) InstanceStates() ([]string, error) {
 		return []string{}, err
 	}
 	cmd := exec.Command("cf", "curl", "/v2/apps/"+guid+"/instances")
-	cmd.Stderr = DefaultStdoutStderr
+	cmd.Stderr = &a.Stderr
 	bytes, err := cmd.Output()
 	if err != nil {
 		return []string{}, err
 	}
-	var data map[string]cfInstance
+	var data map[string]struct {
+		State string `json:"state"`
+	}
 	if err := json.Unmarshal(bytes, &data); err != nil {
 		return []string{}, err
 	}
