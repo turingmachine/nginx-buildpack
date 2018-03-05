@@ -8,8 +8,10 @@ import (
 	"nginx/int2/cfapi/pack"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/cloudfoundry/libbuildpack/cutlass"
+	"github.com/onsi/gomega"
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
 )
@@ -19,11 +21,16 @@ var cluster cfapi.Cluster
 
 func Test(t *testing.T) {
 	var err error
-	cutlass.SeedRandom()
 	bpDir, err = cutlass.FindRoot()
 	if err != nil {
 		t.Error(fmt.Errorf("Could not find buildpack root dir: %s", err))
 	}
+
+	if err := cutlass.CopyCfHome(); err != nil {
+		t.Error(fmt.Errorf("Could not copy cf home dir: %s", err))
+	}
+	cutlass.SeedRandom()
+	gomega.SetDefaultEventuallyTimeout(10 * time.Second)
 
 	// TODO allow choosing which cluster to use
 	if true {
@@ -47,7 +54,7 @@ func Test(t *testing.T) {
 
 	// TODO use the above instead
 	fmt.Println("Uploading Buildpack")
-	if err := cluster.UploadBuildpack("nginx_buildpack", "0.0.4.20180305091047", filepath.Join(bpDir, "/home/dgodd/workspace/nginx-buildpack/nginx_buildpack-cached-v0.0.4.20180305091047.zip")); err != nil {
+	if err := cluster.UploadBuildpack("nginx_buildpack", "0.0.4.20180305091047", filepath.Join(bpDir, "nginx_buildpack-cached-v0.0.4.20180305091047.zip")); err != nil {
 		panic(fmt.Errorf("Could not upload default buildpack: %s", err))
 	}
 
