@@ -16,10 +16,10 @@ var cluster cfapi.Cluster
 func init() {
 	var err error
 	var buildpackName, buildpackFile, buildpackVersion, clusterType string
-	flag.StringVar(&buildpackName, "buildpackName", "nginx_buildpack", "name of buildpack to use")
-	flag.StringVar(&buildpackFile, "buildpackFile", "", "location of buildpack file. (must include version flag)")
-	flag.StringVar(&buildpackVersion, "version", "", "version to use (builds if empty)")
-	flag.StringVar(&clusterType, "cluster", "foundation", "cluster type to run against [foundation,pack,cflocal]")
+	flag.StringVar(&buildpackName, "bpName", "nginx_buildpack", "name of buildpack to use")
+	flag.StringVar(&buildpackFile, "bpFile", "", "location of buildpack file. (must include version flag)")
+	flag.StringVar(&buildpackVersion, "bpVersion", "", "version to use (builds if empty)")
+	flag.StringVar(&clusterType, "clusterType", "foundation", "cluster type to run against [foundation,pack,cflocal]")
 	flag.BoolVar(&cutlass.Cached, "cached", true, "cached buildpack")
 	flag.StringVar(&cutlass.DefaultMemory, "memory", "64M", "default memory for pushed apps")
 	flag.StringVar(&cutlass.DefaultDisk, "disk", "64M", "default disk for pushed apps")

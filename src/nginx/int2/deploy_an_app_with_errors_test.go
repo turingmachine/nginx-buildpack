@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
+	"github.com/sclevine/spec/report"
 )
 
 func TestErrors(t *testing.T) {
@@ -55,5 +56,5 @@ func TestErrors(t *testing.T) {
 				Eventually(app.Log).Should(ContainSubstring("nginx.conf file must be configured to respect the value of `{{.Port}}`"))
 			})
 		})
-	})
+	}, spec.Parallel(), spec.Report(report.Terminal{}))
 }

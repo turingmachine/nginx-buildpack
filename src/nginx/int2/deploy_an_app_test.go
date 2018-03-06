@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
+	"github.com/sclevine/spec/report"
 )
 
 func TestApps(t *testing.T) {
@@ -106,5 +107,5 @@ func TestApps(t *testing.T) {
 				Eventually(app.Log).Should(ContainSubstring(`Available versions: mainline, stable, 1.12.x, 1.13.x`))
 			})
 		})
-	})
+	}, spec.Parallel(), spec.Report(report.Terminal{}))
 }
