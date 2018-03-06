@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"fmt"
 	"nginx/int2/cfapi"
 	"testing"
 
@@ -36,6 +37,7 @@ func TestErrors(t *testing.T) {
 
 			it("Logs nginx an error", func() {
 				Expect(app.Push()).ToNot(Succeed())
+				fmt.Println(app.Log())
 				Expect(app.ConfirmBuildpack("nginx_buildpack")).To(Succeed())
 
 				Eventually(app.Log).Should(ContainSubstring("nginx.conf file must be present at the app root"))

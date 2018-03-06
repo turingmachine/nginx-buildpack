@@ -35,8 +35,8 @@ func (a *App) Buildpacks(buildpacks []string) {
 	a.buildpacks = buildpacks
 }
 
-func (a *App) ConfirmBuildpack(version string) error {
-	return utils.ConfirmBuildpack(a.Log(), version)
+func (a *App) ConfirmBuildpack(name string) error {
+	return utils.ConfirmBuildpack(a.Log(), a.cluster.defaultBuildpackVersion)
 }
 
 func (a *App) setupBuildpackDir(buildpacks []string) error {
@@ -215,7 +215,7 @@ func (a *App) PushAndConfirm() error {
 	if err := a.Push(); err != nil {
 		return err
 	}
-	if err := a.ConfirmBuildpack(a.cluster.defaultBuildpackVersion); err != nil {
+	if err := a.ConfirmBuildpack(a.cluster.defaultBuildpackName); err != nil {
 		return err
 	}
 	return nil
