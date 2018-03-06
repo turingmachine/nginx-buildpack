@@ -25,11 +25,6 @@ func init() {
 	flag.StringVar(&cutlass.DefaultDisk, "disk", "64M", "default disk for pushed apps")
 	flag.Parse()
 
-	// TODO remove
-	clusterType = "pack"
-	buildpackFile = "/home/dgodd/workspace/nginx-buildpack/nginx_buildpack-cached-v0.0.4.20180306093910.zip"
-	buildpackVersion = "0.0.4.20180306093910"
-
 	bpDir, cluster, err = setup.Suite(buildpackName, buildpackFile, buildpackVersion, clusterType)
 	if err != nil {
 		fmt.Printf("Error in SuiteSetup: %s\n", err)

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -144,14 +145,18 @@ func ConfirmBuildpack(log, version string) error {
 	if version == "" {
 		return nil
 	}
-	if !strings.Contains(log, fmt.Sprintf("Buildpack version %s\n", version)) {
-		var versionLine string
-		for _, line := range strings.Split(log, "\n") {
-			if versionLine == "" && strings.Contains(line, " Buildpack version ") {
-				versionLine = line
-			}
-		}
-		return fmt.Errorf("Wrong buildpack version. Expected '%s', but this was logged: %s", version, versionLine)
+	matches := regexp.MustCompile(`Buildpack version (\S+)`).FindAllStringSubmatch(log, -1)
+	if len(matches) == 0 {
+		return fmt.Errorf("Wrong buildpack version. Could not find any buildpack version lines")
 	}
-	return nil
+
+	versions := []string{}
+	for _, m := range matches {
+		versions = append(versions, string(m[1]))
+		if string(m[1]) == version {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("Wrong buildpack version. Expected '%s', but these were logged: %s", version, strings.Join(versions, ", "))
 }

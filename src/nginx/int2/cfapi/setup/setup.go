@@ -36,14 +36,14 @@ func Suite(buildpackName, buildpackFile, buildpackVersion, clusterType string) (
 		return "", nil, fmt.Errorf("Unknown clusterType: %s. Available: foundation,pack,cflocal", clusterType)
 	}
 
-	if buildpackVersion != "" {
-		fmt.Printf("Using buildpack %s version %s\n", buildpackName, buildpackVersion)
-		if err := cluster.UploadBuildpack(buildpackName, buildpackVersion, ""); err != nil {
-			return "", nil, fmt.Errorf("Could not upload default buildpack: %s", err)
-		}
-	} else if buildpackFile != "" {
+	if buildpackFile != "" {
 		fmt.Println("Uploading Buildpack:", buildpackFile)
 		if err := cluster.UploadBuildpack(buildpackName, buildpackVersion, buildpackFile); err != nil {
+			return "", nil, fmt.Errorf("Could not upload default buildpack: %s", err)
+		}
+	} else if buildpackVersion != "" {
+		fmt.Printf("Using buildpack %s version %s\n", buildpackName, buildpackVersion)
+		if err := cluster.UploadBuildpack(buildpackName, buildpackVersion, ""); err != nil {
 			return "", nil, fmt.Errorf("Could not upload default buildpack: %s", err)
 		}
 	} else {
