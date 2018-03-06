@@ -1,68 +1,38 @@
 package integration_test
 
 import (
+	"flag"
 	"fmt"
 	"nginx/int2/cfapi"
-	"nginx/int2/cfapi/cflocal"
-	"nginx/int2/cfapi/foundation"
-	"nginx/int2/cfapi/pack"
-	"testing"
-	"time"
+	"nginx/int2/cfapi/setup"
+	"os"
 
 	"github.com/cloudfoundry/libbuildpack/cutlass"
-	"github.com/onsi/gomega"
-	"github.com/sclevine/spec"
-	"github.com/sclevine/spec/report"
 )
 
 var bpDir string
 var cluster cfapi.Cluster
 
-func Test(t *testing.T) {
+func init() {
 	var err error
-	bpDir, err = cutlass.FindRoot()
+	var buildpackName, buildpackFile, buildpackVersion, clusterType string
+	flag.StringVar(&buildpackName, "buildpackName", "nginx_buildpack", "name of buildpack to use")
+	flag.StringVar(&buildpackFile, "buildpackFile", "", "location of buildpack file. (must include version flag)")
+	flag.StringVar(&buildpackVersion, "version", "", "version to use (builds if empty)")
+	flag.StringVar(&clusterType, "cluster", "foundation", "cluster type to run against [foundation,pack,cflocal]")
+	flag.BoolVar(&cutlass.Cached, "cached", true, "cached buildpack")
+	flag.StringVar(&cutlass.DefaultMemory, "memory", "64M", "default memory for pushed apps")
+	flag.StringVar(&cutlass.DefaultDisk, "disk", "64M", "default disk for pushed apps")
+	flag.Parse()
+
+	// TODO remove
+	clusterType = "pack"
+	buildpackFile = "/home/dgodd/workspace/nginx-buildpack/nginx_buildpack-cached-v0.0.4.20180306093910.zip"
+	buildpackVersion = "0.0.4.20180306093910"
+
+	bpDir, cluster, err = setup.Suite(buildpackName, buildpackFile, buildpackVersion, clusterType)
 	if err != nil {
-		t.Error(fmt.Errorf("Could not find buildpack root dir: %s", err))
+		fmt.Printf("Error in SuiteSetup: %s\n", err)
+		os.Exit(1)
 	}
-
-	if err := cutlass.CopyCfHome(); err != nil {
-		t.Error(fmt.Errorf("Could not copy cf home dir: %s", err))
-	}
-	cutlass.SeedRandom()
-	gomega.SetDefaultEventuallyTimeout(10 * time.Second)
-
-	// TODO allow choosing which cluster to use
-	if true {
-		// 18s & 16s
-		cluster = pack.NewCluster()
-	} else if false {
-		// ??s & ??s
-		cluster = cflocal.NewCluster()
-	} else {
-		// 83s (1m23s) & 81s
-		cluster = foundation.NewCluster()
-	}
-
-	cutlass.Cached = true
-	fmt.Println("Building Buildpack")
-	buildpack, err := cutlass.PackageUniquelyVersionedBuildpack()
-	if err != nil {
-		t.Error(fmt.Errorf("Could not build buildpack: %s", err))
-	}
-	fmt.Println("Uploading Buildpack:", buildpack.File)
-	if err := cluster.UploadBuildpack("nginx_buildpack", buildpack.Version, buildpack.File); err != nil {
-		t.Error(fmt.Errorf("Could not upload default buildpack: %s", err))
-	}
-
-	// TODO use the above instead
-	// fmt.Println("Uploading Buildpack")
-	// if err := cluster.UploadBuildpack("nginx_buildpack", "0.0.4.20180305091047", filepath.Join(bpDir, "nginx_buildpack-cached-v0.0.4.20180305091047.zip")); err != nil {
-	// 	panic(fmt.Errorf("Could not upload default buildpack: %s", err))
-	// }
-
-	spec.Run(t, "Buildpack", func(t *testing.T, when spec.G, it spec.S) {
-		testObject3(t, when, it)
-		testObject4(t, when, it)
-		testObject5(t, when, it)
-	}, spec.Parallel(), spec.Report(report.Terminal{}))
 }

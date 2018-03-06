@@ -139,3 +139,19 @@ func HttpGetBody(url string) (string, error) {
 	// }
 	return body, err
 }
+
+func ConfirmBuildpack(log, version string) error {
+	if version == "" {
+		return nil
+	}
+	if !strings.Contains(log, fmt.Sprintf("Buildpack version %s\n", version)) {
+		var versionLine string
+		for _, line := range strings.Split(log, "\n") {
+			if versionLine == "" && strings.Contains(line, " Buildpack version ") {
+				versionLine = line
+			}
+		}
+		return fmt.Errorf("Wrong buildpack version. Expected '%s', but this was logged: %s", version, versionLine)
+	}
+	return nil
+}

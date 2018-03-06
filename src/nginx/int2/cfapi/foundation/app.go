@@ -14,50 +14,59 @@ import (
 )
 
 type App struct {
-	cluster    *Cluster
-	buildpacks []string
-	fixture    string
-	name       string
-	env        map[string]string
-	Stdout     bytes.Buffer
-	Stderr     bytes.Buffer
-	logCmd     *exec.Cmd
-	spaceGUID  string
-	appGUID    string
+	cluster      *Cluster
+	buildpacks   []string
+	fixture      string
+	name         string
+	env          map[string]string
+	Stdout       bytes.Buffer
+	Stderr       bytes.Buffer
+	logCmd       *exec.Cmd
+	spaceGUID    string
+	appGUID      string
+	memory       string
+	disk         string
+	stack        string
+	startCommand string
 }
 
 func (a *App) Buildpacks(buildpacks []string) {
 	a.buildpacks = buildpacks
 }
+func (a *App) Memory(memory string) {
+	a.memory = memory
+}
+func (a *App) Disk(disk string) {
+	a.disk = disk
+}
+func (a *App) StartCommand(startCommand string) {
+	a.startCommand = startCommand
+}
 
 func (a *App) ConfirmBuildpack(version string) error {
-	// TODO
-	return nil
+	return utils.ConfirmBuildpack(a.Log(), version)
 }
 
 func (a *App) PushNoStart() error {
 	args := []string{"push", a.name, "--no-start", "-p", a.fixture}
-	// if a.Stack != "" {
-	// 	args = append(args, "-s", a.Stack)
-	// }
+	if a.stack != "" {
+		args = append(args, "-s", a.stack)
+	}
 	if len(a.buildpacks) == 1 {
 		args = append(args, "-b", a.buildpacks[len(a.buildpacks)-1])
 	}
 	if _, err := os.Stat(filepath.Join(a.fixture, "manifest.yml")); err == nil {
 		args = append(args, "-f", filepath.Join(a.fixture, "manifest.yml"))
 	}
-	// if a.Memory != "" {
-	// 	args = append(args, "-m", a.Memory)
-	// }
-	// if a.Disk != "" {
-	// 	args = append(args, "-k", a.Disk)
-	// }
-	// if a.StartCommand != "" {
-	// 	args = append(args, "-c", a.StartCommand)
-	// }
-	// if a.StartCommand != "" {
-	// 	args = append(args, "-c", a.StartCommand)
-	// }
+	if a.memory != "" {
+		args = append(args, "-m", a.memory)
+	}
+	if a.disk != "" {
+		args = append(args, "-k", a.disk)
+	}
+	if a.startCommand != "" {
+		args = append(args, "-c", a.startCommand)
+	}
 	command := exec.Command("cf", args...)
 	command.Stdout = &a.Stdout
 	command.Stderr = &a.Stderr
@@ -77,8 +86,7 @@ func (a *App) PushNoStart() error {
 	if a.logCmd == nil {
 		a.logCmd = exec.Command("cf", "logs", a.name)
 		a.logCmd.Stderr = &a.Stderr
-		// TODO clear a.Stdout
-		// a.Stdout = bytes.NewBuffer(nil)
+		a.Stdout.Reset()
 		a.logCmd.Stdout = &a.Stdout
 		if err := a.logCmd.Start(); err != nil {
 			return err
@@ -112,8 +120,9 @@ func (a *App) PushAndConfirm() error {
 	if err := a.Push(); err != nil {
 		return err
 	}
-	// TODO
-	// Expect(app.ConfirmBuildpack(buildpackVersion)).To(Succeed())
+	if err := a.ConfirmBuildpack(a.cluster.defaultBuildpackVersion); err != nil {
+		return err
+	}
 	return nil
 }
 

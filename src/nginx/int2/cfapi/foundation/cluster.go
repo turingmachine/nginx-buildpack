@@ -11,6 +11,7 @@ import (
 )
 
 type Cluster struct {
+	defaultBuildpackVersion string
 }
 
 func NewCluster() models.Cluster {
@@ -27,6 +28,9 @@ func (c *Cluster) UploadBuildpack(name, version, file string) error {
 	out2, err := command.CombinedOutput()
 	if err != nil {
 		fmt.Println(string(out1), "\n", string(out2))
+	}
+	if c.defaultBuildpackVersion == "" {
+		c.defaultBuildpackVersion = version
 	}
 	return err
 }
