@@ -28,11 +28,11 @@ func Run(sf *Finalizer) error {
 	if err != nil {
 		return err
 	}
-	if portFound, err := regexp.Match("{{.Port}}", conf); err != nil {
-		return err
-	} else if !portFound {
-		sf.Log.Error("nginx.conf file must be configured to respect the value of `{{.Port}}`")
-		return errors.New("no .Port")
-	}
+	//if portFound, err := regexp.Match("{{.Port}}", conf); err != nil {
+	//	return err
+	//} else if !portFound {
+	//	sf.Log.Error("nginx.conf file must be configured to respect the value of `{{.Port}}`")
+	//	return errors.New("no .Port")
+	//}
 	return nil
 }
